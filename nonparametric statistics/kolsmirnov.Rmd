@@ -1,0 +1,39 @@
+---
+title: "Kolmogrov-Smirnov Test"
+author: "Sercan Doğan"
+date: "October 15, 2017"
+output: html_document
+---
+# Başlangıç
+* Beklenen ve gözlenen birikimli dağılım fonksiyonunun uygunluğuna dayalı bir testtir.
+
+$S(x)$: Gözlenen birikimli dağılım fonksiyon (örnekten alınan)
+$F_0(x)$: Yokluk hiptezindeki (beklenen) birikimli dağılım fonksiyonu
+
+
+R fonksiyonu ile D istatistik değeri:
+```{r}
+data <- c(1.60,2.40,2.45,1.90,2.70,2.10,2.4,2.4,2.7,1.9,2.8,2.7,1.7,1.7,2.0,3.1,3.2,3.0,2.8,2.6,2.4,2.7,1.9,2.9,2.5,2.6,1.8,3.4,2.5,2.75)
+
+ks.test(data,"pnorm",  2.5, 0.3)
+```
+
+
+Biz çözelim:
+```{r}
+cdf <- table(data)
+sum_cdf <- cumsum(cdf)
+s_freq <- sum_cdf / max(sum_cdf)
+f0_cdf <- pnorm(as.double(names(cdf)),2.5,0.3)
+dstats <- max(max(abs(s_freq  - f0_cdf)),abs(c(0,s_freq[-length(s_freq)])  - f0_cdf))
+
+
+dstats
+
+```
+
+
+
+
+
+

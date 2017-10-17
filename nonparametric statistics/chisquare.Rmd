@@ -1,0 +1,138 @@
+---
+title: "Ki-Kare Testi"
+author: "Sercan Doğan"
+date: "October 12, 2017"
+output: html_document
+---
+## Başlangıç
+
+Bu `R markdown`, R ile Ki-Kare testi yapımı üzerine hazırlanmıştır. Yapmak istediğim, hem ki-kare testinin adımlarını R üzerinden göstermektir.
+
+Her zamanki gibi `tidyverse` kütüphanesini çağırıyorum.
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+
+#### Ki-Kare testi nedir?
+
+* Ki-Kare testi belli bir dağılıma uygun olup olmamayı araştırmak için kullanılır.
+* Bir veya birden fazla kategorilerde gözlenen değerler ile beklenen frekanslar arasındaki uyuma dayalı bir testtir.
+
+
+$$X^2_{c-1} = \sum_{j = 1}^{c}\dfrac{(o_j-e_j)^2}{e_j}$$
+
+$$c: sınıf\ sayısı$$
+$$o_j: j.\ sınıf\ içerisindeki\ örnek\ birim\ sayısı$$
+$$n: örnek\ hacmi$$
+$$e_j: j.\ sınıf\ için\ beklenen\ frekans$$
+$$p_j: H_0\ hipotezi\ (yokluk\ hipotezi)\ doğru\ iken,\ rastgele\ seçilen\ herhangi \ bir \ birimi\ j. \ sınıfta\ bulunma\ olasılığı$$
+
+$$e_j = n \times p_j$$
+
+
+#### Örnek
+Anket çalışması yapan 200 kişilik bir ekipte, her bir anketörün yaptığı anket sayısı aşağıda verilmiştir. Dağılımın Poisson dağılımına uygun olup olmadığını ki-kare testi ile araştırınız.
+
+| anket sayısı | anketör sayısı |
+|:------------:|:--------------:|
+| 0            | 44             |
+| 1            | 64             |
+| 2            | 48             |
+| 3            | 23             |
+| 4            | 12             |
+| 5            | 5              |
+| 6            | 2              |
+| 7            | 1              |
+| 8            | 1              |
+
+
+Yukarıdaki veriyle bir tibble oluşturalım.
+```{r}
+anket <- tribble(
+  ~anket_sayisi, ~anketor,
+              0,       44,
+              1,       64,
+              2,       48,
+              3,       23,
+              4,       12,
+              5,       5,
+              6,       2, 
+              7,       1,
+              8,       1
+)
+
+anket
+
+```
+
+
+Öncelikle Hipotezimi oluşturalım:
+
+$$H_0: Dağılım\ poison\ dağılımına\ uygundur. $$
+$$H_A: Dağılım\ poison\ dağılımına\ uygun\ değildir. $$
+
+Beklenen değerleri bulmak için öncelikle, Poisson dağılımının parametresi olan $\lambda$ yani ortalamayı bulmamız gerekli. Bunun için;
+
+```{r}
+lambda <- sum((anket$anket_sayisi * anket$anketor)) / 200
+
+lambda
+```
+
+Poisson Dağılımı fonksiyonu:
+
+$$ P(X = x) = \dfrac{\lambda^x*e^{-x}}{x!}$$
+Yukarıdaki fonksiyonda x değerlerini yani `anket_sayisi` değerlerini yerine koyalım ve ardından 200 ile çarparak beklenen değerleri bulalım.
+```{r}
+anket$beklenen_deger <- sapply(anket$anket_sayisi, function(x) dpois(x,lambda = lambda) * 200)
+
+anket
+```
+
+Not: Ki-kare testi yapılıyorsa gözlenen/beklenen frekans sayısı 5'ten küçükse bunları sınıflandırıyoruz.
+```{r}
+next_row <- filter(anket, beklenen_deger <= 5) %>%
+    colSums()
+
+anket <- anket %>%
+  filter(beklenen_deger > 5) %>%
+  rbind(next_row)
+
+anket
+```
+
+
+
+
+Bulduğumuz değerleri Ki-Kare fonksiyonunda yerine koyalım,
+```{r}
+anket <- anket %>%
+        mutate(chisq = ((anketor - beklenen_deger) ^ 2) / beklenen_deger)
+
+anket
+
+```
+
+
+
+
+
+
+
+
+Ki-Kare değerlerini topladığmızda kritik değeri buluyoruz
+```{r}
+sum(anket$chisq)
+```
+
+$X_{0,05;5}^2 = 11,07$
+
+
+Ki-Kare tablosuna baktığımızda tablo değerinin kritik değerden büyük olduğu için
+$(11,07(ChiSquare-table) > 4.917)$, $H_0$ hipotezini red edemiyoruz.
+
+
+
+

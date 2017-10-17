@@ -1,0 +1,284 @@
+---
+title: "Regression Analysis Assignment"
+author: "Sercan Doğan"
+date: "October 12, 2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+A) 
+- Estimate the model $\hat{Y} = \hat{\beta_0} + \hat{\beta_1}X$  
+- Investigate that your model will be valid for further analysis such as statistical inference, prediction and estimation, confidence intervals
+- Investigate behaviour of standardized residuals.
+
+B)
+- Estimate the model $\hat{Y} = \hat{\beta_0} + \hat{\beta_1}X + \hat{\beta_2}X^2$ (polynomial regression)
+- Investigate residuals using graphic.
+
+Which model is more suitable to data at hand?
+
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+
+```{r}
+rdata <- tribble(
+  ~x, ~y,
+  1,  23,
+  2,  29,
+  3,  49,
+  4,  64,
+  4,  74,
+  5,  87,
+  6,  96,
+  6,  97,
+  7,  109,
+  8,  119,
+  9,  149,
+  9,  145,
+  10, 154,
+  10, 166
+)
+
+rdata
+```
+
+
+### A
+
+For first model we need to assign `rdata` to new tibble. Because we will create specific columns for each model. 
+
+```{r}
+model_a <- rdata
+```
+
+Total observation count:
+```{r}
+n <- nrow(model_a)
+n
+```
+
+
+Let's see scatter plot of data:
+```{r}
+ggplot(model_a, aes(x = x, y = y)) +
+  geom_point()
+
+```
+
+Means
+```{r}
+mean_x <- sum(model_a$x) / nrow(model_a)
+mean_y <- sum(model_a$y) / nrow(model_a)
+#X
+mean_x
+#Y
+mean_y
+
+```
+
+We will use formula which you see below for determinating $\hat{\beta_0}$ and $\hat{\beta_1}$
+
+$$\hat{\beta_1} = \dfrac{S_{xy}}{S_{xx}} = \dfrac{\sum{XY} - n\bar{X}\bar{Y}}{\sum{X^2} - n\bar{X}^2}$$
+$$\hat{\beta_0} = \bar{Y} - \hat{\beta_1}\bar{X}$$
+
+So, we need $X^2$ and $XY$:
+
+```{r}
+model_a <- model_a %>%
+  mutate(xsquare = x ^ 2,
+         xy = x * y)
+
+model_a
+
+```
+Thus,
+
+```{r}
+slope <- (sum(model_a$xy) - (n * mean_x * mean_y)) / (sum(model_a$xsquare) - (n * mean_x ^ 2))
+
+
+intercept <- mean_y - slope * mean_x
+
+paramaters <- list('intercept' = intercept, 'slope' = slope)
+
+paramaters
+
+```
+
+
+Determine residual:
+
+```{r}
+model_a <- model_a %>% 
+  mutate(y_estimator = paramaters$intercept + x * paramaters$slope,
+         e = y - y_estimator,
+         esquare = e ^ 2)
+
+model_a
+
+```
+
+
+Sum of residual must be 0;
+```{r}
+round(sum(model_a$e),2)
+```
+
+Mean Square Error:
+```{r}
+mse <- sum(model_a$esquare / (n - 2))
+
+mse
+```
+
+Add standardized residual as a column:
+```{r}
+model_a <- model_a %>%
+  mutate(estd = e / sqrt(mse))
+
+
+model_a$estd
+```
+
+
+Random pattern appears so it is valid for further analysis and the form of the estimated model is appropriate.
+```{r}
+ggplot(model_a,aes(x,estd)) +
+  geom_point()
+
+```
+
+Let's draw regression line.
+
+```{r}
+ggplot(model_a, mapping = aes(x,y)) + 
+  geom_point() + geom_line(aes(y=model_a$y_estimator))
+
+```
+
+
+
+
+
+### B
+First of all;
+
+```{r}
+model_b <- rdata
+
+model_b
+```
+
+
+Our polynomial model is $\hat{Y} = \hat{\beta_0} + \hat{\beta_1}X + \hat{\beta_2}X^2$
+
+
+
+$$e_i = Y_i - \hat{Y_i} = Y_i - \hat{\beta_0} - \hat{\beta_1}X_i- \hat{\beta_2}X_i^2 $$
+And then,
+
+$$S = \sum{e_i^2} = \sum{(Y_i - \hat{Y_i})^2} = \sum{(Y_i - \hat{\beta_0} - \hat{\beta_1}X - \hat{\beta_2}X^2)^2}$$
+
+When we derivate of $\beta_0$, $\beta_1$, $\beta_2$ and then equal to zero, we get three system of equations:
+
+$$\sum{Y_i} = n\hat{\beta_0} + \hat{\beta_1}\sum{X_i} + \hat{\beta_2}\sum{X_i^2}$$
+$$\sum{X_iY_i} = \hat{\beta_0}\sum{X_i} + \hat{\beta_1}\sum{X_i^2} + \hat{\beta_2}\sum{X_i^3}$$
+$$\sum{X_i^2Y_i} = \hat{\beta_0}\sum{X_i^2} + \hat{\beta_1}\sum{X_i^3} + \hat{\beta_2}\sum{X_i^4}$$
+Thus,
+
+We create matrix of cofficients and equations vector. 
+
+```{r}
+system_equation <- matrix(c(n, sum(model_b$x), sum(model_b$x ^ 2),
+                            sum(model_b$x), sum(model_b$x ^ 2), sum(model_b$x ^ 3),
+                            sum(model_b$x ^ 2), sum(model_b$x ^ 3), sum(model_b$x ^4)),
+                          ncol = 3,
+                          byrow = T)
+
+equal_to <- c(sum(model_b$y),
+              sum(model_b$x * model_b$y), 
+              sum(model_b$x ^ 2 * model_b$y))
+
+
+coefficients_b <- solve(system_equation,equal_to)
+
+names(coefficients_b) <- c("beta0", "beta1", "beta2")
+
+coefficients_b <- as.list(coefficients_b)
+
+coefficients_b
+
+
+```
+
+```{r}
+model_b <- model_b %>% 
+  mutate(y_estimator = coefficients_b$beta0 + x * coefficients_b$beta1 + coefficients_b$beta2 * x ^ 2,
+         e = y - y_estimator,
+         esquare = e ^ 2)
+
+model_b
+```
+
+
+Sum of residual must be 0;
+```{r}
+round(sum(model_b$e),2)
+```
+
+
+Mean Square Error:
+```{r}
+mse <- sum(model_b$esquare / (n - 3))
+
+mse
+```
+
+Add standardized residual as a column:
+```{r}
+model_b <- model_b %>%
+  mutate(estd = e / sqrt(mse))
+
+
+model_b$estd
+```
+
+
+
+Random pattern appears:
+```{r}
+ggplot(model_b,aes(x,estd)) +
+  geom_point()
+
+```
+
+
+Regression line:
+```{r}
+
+
+
+ggplot(model_b, mapping = aes(x,y)) + 
+  geom_point() + geom_line(aes(y=model_b$y_estimator))
+```
+
+
+Finding the best model is to find a model which makes minimum of sum of square of residual
+
+```{r}
+# arg min --> sum E^2
+sum(model_a$esquare) 
+
+
+sum(model_b$esquare)
+
+```
+
+
+So, Model b which is Polynomial is more suitable.
+
