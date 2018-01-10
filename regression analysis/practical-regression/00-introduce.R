@@ -35,7 +35,10 @@ t(x) %*% x # Matrix Multiplication
  
 # Matrix multplication way
  xtx_inv %*% t(x) %*% y
- 
+
+# Variance 
+ xtx_inv * var(x)
+  
  
 # ESTIMATING ROOT MEAN SQUARE ERROR -----------------------------------------------------
 sqrt(sum(gfit$residuals ^ 2) / (30 - 6)) # 60.975
@@ -46,6 +49,7 @@ sqrt(sum(gfit$residuals ^ 2) / (30 - 6)) # 60.975
  # COMPUTE R2
  
 (rsquare <- 1 - sum(gfit$res ^ 2) / sum((y - mean(y)) ^ 2))
+ 
  
  
 
