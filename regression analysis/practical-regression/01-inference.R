@@ -102,3 +102,5 @@ summary(g, cor = T)
 
 g <- lm(odor ~ gas + pack, data = odor) # drop temp variable
 summary(g, cor= T)
+
+#
