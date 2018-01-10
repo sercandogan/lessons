@@ -103,4 +103,7 @@ summary(g, cor = T)
 g <- lm(odor ~ gas + pack, data = odor) # drop temp variable
 summary(g, cor= T)
 
-#
+# Identifiability
+
+#' Unidenfiability will occur when X is not of full rank - when its columns are
+#' linearly depedent. 
